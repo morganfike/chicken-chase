@@ -166,6 +166,12 @@ window.CHASE = {
     background:var(--accent); box-shadow: 0 5px 0 var(--accent-dark); transition: transform .12s; }
   .bigbtn:hover{ transform:translateY(-2px); }
   .bigbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 var(--accent-dark); }
+  .overview{ font-size:18px; line-height:1.4; margin:12px 0 22px; color:var(--muted); }
+  [hidden]{ display:none !important; }
+  .startBtns{ display:flex; flex-direction:column; gap:10px; }
+  #rulesBtn{ background:#fff; border:1px solid var(--border); color:var(--ink); padding:12px; border-radius:14px; font-size:16px; font-weight:600; }
+  #rulesBtn:hover{ background:var(--soft); }
+  #rules{ margin-top:0; }
   .fine{ text-align:center; color:var(--muted); font-size:13px; margin-top:12px; }
   #recapScreen .card{ max-width:800px; }
   .recapGrid > *{ min-width:0; }
@@ -286,14 +292,18 @@ window.CHASE = {
   <div class="card">
     <div class="kicker">One afternoon on the Lower East Side</div>
     <h1>Cade's 28th: The <span class="chick">Chicken</span> Chase</h1>
-    <ul>
+    <p class="overview">Cade puts on a chicken head and hides in a bar. Four teams have to find him, one drink at a time.</p>
+    <ul id="rules" hidden>
       <li><span class="i">🐔</span><span>The birthday boy is the chicken. Cade puts on a chicken head, takes the pot, and gets 30 minutes to hide inside one bar from a list we pick ahead of time. Once he's in, he can't leave.</span></li>
       <li><span class="i">💸</span><span>Everyone puts $10 to $20 in the pot and splits into 4 teams. Nobody sees the bar list until the teams are released.</span></li>
       <li><span class="i">🍺</span><span>Every bar your team walks into that doesn't have the chicken, you order a drink, finish it, and take a team photo before moving on.</span></li>
       <li><span class="i">🤫</span><span>Each team keeps track of the bars it has checked in its own chat. Nobody tells the other teams which bars are empty, where they're headed, or that they found him.</span></li>
       <li><span class="i">🍻</span><span>When you find the chicken, you stay and drink from the pot with him. The last team to find him buys everyone a round.</span></li>
     </ul>
-    <button class="bigbtn" id="startBtn">Watch the Night</button>
+    <div class="startBtns">
+      <button class="bigbtn" id="startBtn">Watch the Night</button>
+      <button id="rulesBtn" aria-expanded="false" aria-controls="rules">See the rules</button>
+    </div>
     <div class="fine">About 2½ minutes · sound on 🔊</div>
   </div>
 </div>
@@ -1987,6 +1997,10 @@ $('#btnRestart').onclick = () => { resetRun(); S.playing = true; updatePlayBtn()
 $('#btnMute').onclick = () => { Sound.setMuted(!Sound.muted); $('#btnMute').textContent = Sound.muted ? '🔇' : '🔊'; };
 document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCamMode(b.dataset.cam));
 $('#startBtn').onclick = () => { Sound.init(); startRun(); };
+$('#rulesBtn').onclick = () => {
+  const r = $('#rules'), open = r.hidden; r.hidden = !open;
+  $('#rulesBtn').textContent = open ? 'Hide the rules' : 'See the rules'; $('#rulesBtn').setAttribute('aria-expanded', open);
+};
 $('#chatToggle').onclick = () => { const c = $('#chatCard'); c.classList.toggle('collapsed'); $('#chatToggle').textContent = c.classList.contains('collapsed') ? '▴' : '▾'; };
 if (innerWidth > 760) $('#chatCard').classList.remove('collapsed');
 addEventListener('keydown', e => { if (e.code === 'Space' && S.running && !$('#lightbox').classList.contains('on')) { S.playing = !S.playing; updatePlayBtn(); e.preventDefault(); } });
