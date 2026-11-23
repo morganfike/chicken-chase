@@ -168,7 +168,8 @@ window.CHASE = {
   .bigbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 var(--accent-dark); }
   .fine{ text-align:center; color:var(--muted); font-size:13px; margin-top:12px; }
   #recapScreen .card{ max-width:800px; }
-  .recapGrid{ display:grid; grid-template-columns: 1.1fr 1fr; gap:18px; margin:16px 0 20px; align-items:start; }
+  .recapGrid > *{ min-width:0; }
+  .recapGrid{ display:grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap:18px; margin:16px 0 20px; align-items:start; }
   .stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .stat{ background:var(--soft); border-radius:14px; padding:11px 13px; }
   .stat .v{ font-weight:700; font-size:24px; line-height:1.1; }
@@ -236,7 +237,10 @@ window.CHASE = {
     #lbImg{ width:88vw; }
     .card{ padding:22px 20px; }
     .card li{ font-size:15px; }
-    .recapGrid{ grid-template-columns:1fr; }
+    .recapGrid{ grid-template-columns:minmax(0, 1fr); }
+    .wall{ max-height:300px; }
+    .stat .v{ font-size:20px; }
+    .lbl3d{ font-size:11px !important; padding:2px 8px; }
   }
   @media (min-width: 761px){ #chatLast{ display:none; } }
 </style>
@@ -940,15 +944,28 @@ function makeGlass() {
 function makePerson(shirt, o = {}) {
   const g = new THREE.Group();
   const skin = lam(o.skin || pick(SKINS)), sh = lam(shirt), pa = lam(o.pants || pick(PANTS)), ha = lam(o.hair || pick(HAIRS));
-  const legL = new THREE.Group(); legL.position.set(-0.2, 0.95, 0); legL.add(mesh(G.box, pa, 0.28, 0.95, 0.32, 0, -0.47, 0));
-  const legR = new THREE.Group(); legR.position.set(0.2, 0.95, 0); legR.add(mesh(G.box, pa, 0.28, 0.95, 0.32, 0, -0.47, 0));
-  const torso = mesh(G.box, sh, 0.78, 0.9, 0.45, 0, 1.4, 0);
-  const armL = new THREE.Group(); armL.position.set(-0.5, 1.8, 0); armL.add(mesh(G.box, sh, 0.22, 0.82, 0.24, 0, -0.38, 0)); armL.add(mesh(G.box, skin, 0.17, 0.2, 0.19, 0, -0.85, 0));
-  const armR = new THREE.Group(); armR.position.set(0.5, 1.8, 0); armR.add(mesh(G.box, sh, 0.22, 0.82, 0.24, 0, -0.38, 0)); armR.add(mesh(G.box, skin, 0.17, 0.2, 0.19, 0, -0.85, 0));
+  const fem = o.fem ?? Math.random() < 0.5, skirt = fem && Math.random() < 0.45;
+  const legMat = skirt ? (Math.random() < 0.5 ? skin : lam('#2a2530')) : pa, lw = fem ? 0.24 : 0.28;
+  const legL = new THREE.Group(); legL.position.set(-0.18, 0.95, 0); legL.add(mesh(G.box, legMat, lw, 0.95, 0.3, 0, -0.47, 0));
+  const legR = new THREE.Group(); legR.position.set(0.18, 0.95, 0); legR.add(mesh(G.box, legMat, lw, 0.95, 0.3, 0, -0.47, 0));
+  const torso = mesh(G.box, sh, fem ? 0.66 : 0.8, 0.9, 0.42, 0, 1.4, 0);
+  const sx = fem ? 0.44 : 0.51;
+  const armL = new THREE.Group(); armL.position.set(-sx, 1.8, 0); armL.add(mesh(G.box, sh, 0.22, 0.82, 0.24, 0, -0.38, 0)); armL.add(mesh(G.box, skin, 0.17, 0.2, 0.19, 0, -0.85, 0));
+  const armR = new THREE.Group(); armR.position.set(sx, 1.8, 0); armR.add(mesh(G.box, sh, 0.22, 0.82, 0.24, 0, -0.38, 0)); armR.add(mesh(G.box, skin, 0.17, 0.2, 0.19, 0, -0.85, 0));
   const cup = makeGlass(); cup.position.set(0, -0.98, 0.08); cup.visible = false; armR.add(cup);
   const head = mesh(G.sph, skin, 0.3, 0.32, 0.3, 0, 2.13, 0);
-  const hair = mesh(G.sph, ha, 0.32, 0.2, 0.32, 0, 2.3, -0.04);
-  g.add(legL, legR, torso, armL, armR, head, hair);
+  // hair is a group so the chicken head can hide all of it at once
+  const hair = new THREE.Group();
+  hair.add(mesh(G.sph, ha, 0.33, 0.21, 0.33, 0, 2.3, -0.04));
+  const extras = [];
+  if (fem) {
+    const style = o.hairStyle ?? Math.floor(Math.random() * 3);
+    if (style === 0) hair.add(mesh(G.box, ha, 0.6, 0.72, 0.26, 0, 1.98, -0.16));          // long and straight
+    else if (style === 1) hair.add(mesh(G.sph, ha, 0.15, 0.2, 0.15, 0, 2.18, -0.36));     // ponytail
+    else { hair.add(mesh(G.sph, ha, 0.38, 0.3, 0.36, 0, 2.12, -0.08)); hair.add(mesh(G.box, ha, 0.68, 0.3, 0.22, 0, 1.9, -0.14)); } // curly shoulder-length
+    if (skirt) extras.push(mesh(new THREE.CylinderGeometry(0.34, 0.5, 0.5, 8), sh, 1, 1, 1, 0, 0.75, 0));
+  } else if (Math.random() < 0.3) hair.add(mesh(G.box, ha, 0.42, 0.2, 0.12, 0, 1.98, 0.2)); // beard
+  g.add(legL, legR, torso, armL, armR, head, hair, ...extras);
   g.traverse(m => { if (m.isMesh) m.castShadow = true; });
   g.userData = { legL, legR, armL, armR, cup, head, hair, phase: Math.random() * 10, seed: Math.random() * 10, yaw: 0 };
   scene.add(g);
@@ -1247,12 +1264,14 @@ function capturePhotos() {
     hidden.forEach(s => s.visible = false);
     const shells = bars.map(b => b.shellMesh.visible);
     if (ph.bar) ph.bar.shellMesh.visible = false;
-    const W = renderer.domElement.width, H = renderer.domElement.height;
-    photoCam.fov = ph.fov || 58; photoCam.aspect = W / H; photoCam.updateProjectionMatrix();
+    const vw = Math.min(innerWidth, innerHeight * 4 / 3), vh = vw * 3 / 4, pr = renderer.getPixelRatio();
+    photoCam.fov = ph.fov || 58; photoCam.aspect = 4 / 3; photoCam.updateProjectionMatrix();
     photoCam.position.copy(ph.pos); photoCam.lookAt(ph.look);
+    renderer.setViewport(0, 0, vw, vh);
     renderer.render(scene, photoCam);
-    const ch = Math.min(H, W * 3 / 4), cw = ch * 4 / 3;
-    photoCtx.drawImage(renderer.domElement, (W - cw) / 2, (H - ch) / 2, cw, ch, 0, 0, 480, 360);
+    const H = renderer.domElement.height;
+    photoCtx.drawImage(renderer.domElement, 0, H - vh * pr, vw * pr, vh * pr, 0, 0, 480, 360);
+    renderer.setViewport(0, 0, innerWidth, innerHeight);
     // warm film look + date stamp
     photoCtx.fillStyle = 'rgba(255,190,120,.08)'; photoCtx.fillRect(0, 0, 480, 360);
     photoCtx.font = '600 16px Fredoka'; photoCtx.fillStyle = '#ffb347'; photoCtx.textAlign = 'right'; photoCtx.fillText(ph.stamp, 466, 348);
@@ -1309,9 +1328,9 @@ function route(A, B, start, fromInside, end) {
 }
 
 /* ====================== ENTITIES ====================== */
-const teamPeople = CFG.teams.map(tm => [0, 1, 2, 3].map(() => makePerson(tm.color)));
+const teamPeople = CFG.teams.map((tm, ti) => [0, 1, 2, 3].map(k => makePerson(tm.color, { fem: (k + ti) % 2 === 0 })));
 const teamLabels = CFG.teams.map(tm => { const s = labelSprite(tm.name, { bg: tm.color, h: 1.6 }); scene.add(s); return s; });
-const cade = makePerson('#7b3fc4', { skin: '#e8b48f', hair: '#3b2416', pants: '#24324a' });
+const cade = makePerson('#7b3fc4', { skin: '#e8b48f', hair: '#3b2416', pants: '#24324a', fem: false });
 const chickenHead = makeChickenHead(); chickenHead.position.set(0, 2.2, 0); chickenHead.visible = false; cade.add(chickenHead);
 const cadeLabel = labelSprite('🎂 ' + NAME, { bg: '#ffe08a', fg: '#1f1d2b', h: 1.6 }); scene.add(cadeLabel);
 const pot = makePot();
@@ -1678,7 +1697,7 @@ function shot(T) {
   if (cam.mode === 'cade') return cadeShot();
   if (cam.mode === 'team') return teamShot(cam.teamIdx, T);
   if (cam.mode === 'map') return { target: new V3(0, 0, 10), off: mapOffset() };
-  if (T < T_HIDE0) { const a = 0.5 + T * 0.09, n = bars[0].normal; return { target: R.c0.clone().setY(2), off: new V3(n.x * 7 + Math.sin(a) * 5, 20 + T * 0.2, n.z * 7 + Math.cos(a) * 5) }; }
+  if (T < T_HIDE0) { const n = bars[0].normal, al = new V3(n.z, 0, -n.x), d = 19 - T * 0.25, side = Math.sin(T * 0.12) * 3; return { target: R.c0.clone().setY(1.6), off: new V3(al.x * d + n.x * (2 + side), 13 + T * 0.15, al.z * d + n.z * (2 + side)) }; }
   if (T < T_REL - 1.5) return cadeShot();
   if (T < T_REL + 4) return { target: R.c0.clone(), off: new V3(0, 60, 52) };
   if (T >= R.T_FIN) { const u = smooth(R.T_FIN, R.T_FIN + 6, T); return { target: new V3(0, lerp(1.6, 60, u), 0).lerp(cBar.table, 1 - u), off: new V3(lerp(9, 190, u), lerp(17, 150, u), lerp(9, -230, u)) }; }
@@ -1696,6 +1715,7 @@ function shot(T) {
 const _off = new V3();
 function updateCamera(dtR) {
   const sh = shot(S.T), now = performance.now();
+  if (S.running && cam.mode !== 'map' && camera.aspect < 1) sh.off.multiplyScalar(clamp(1.05 / camera.aspect, 1, 2.3));
   _off.copy(camera.position).sub(controls.target);
   const userRecent = now - cam.lastUser < 4500;
   const sp = S.running ? Math.max(1, S.speed * 0.8) : 1, k = 1 - Math.exp(-dtR * 1.8 * sp);
@@ -1776,6 +1796,9 @@ function startRun() {
   $('#startScreen').classList.remove('on'); hud.classList.add('on');
   S.running = true; S.playing = true; updatePlayBtn();
   resetRun();
+  const n = bars[0].normal, al = new V3(n.z, 0, -n.x);
+  cam.target.copy(S.R.c0); controls.target.copy(S.R.c0);
+  camera.position.copy(S.R.c0).add(new V3(al.x * 30, 90, al.z * 30));
 }
 
 function updateSim(dt) {
